@@ -1,0 +1,5 @@
+Generate moves untuk ronde pertama -> disave ke sebuah array
+Loop dari semua moves, buat board baru dan do moves dari array
+Simpan semua board baru dalam array
+Loop semua board, generate moves untuk masing - masing board
+Simpan semua moves ke suatu array
