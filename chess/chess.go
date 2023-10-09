@@ -4,32 +4,22 @@ import (
 	"fmt"
 	"go-chess/helper"
 	"strings"
-
-	"github.com/mohae/deepcopy"
 )
 
-type Chessboard struct {
-	Point []ChessPiece
-	Turn  int
+var Board [64][]int
+
+type Move struct {
+	StartPosition int
+	EndPosition   int
 }
 
-func NewChessboard() *Chessboard {
-	cboard := Chessboard{
-		Point: make([]ChessPiece, 64),
-		Turn:  0,
-	}
-	cboard.GenerateFen()
-
-	return &cboard
-}
-
-func (cb *Chessboard) PrintBoard() {
+func PrintBoard(b []int) {
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 8; j++ {
-			if cb.Point[i*8+j].Type == "" {
+			if b[i*8+j] == 0 {
 				fmt.Print(". ")
 			} else {
-				fmt.Print(cb.Point[i*8+j].ToPrintable())
+				fmt.Print(ToPrintable(b[i*8+j]))
 				fmt.Print(" ")
 			}
 		}
@@ -37,47 +27,60 @@ func (cb *Chessboard) PrintBoard() {
 	}
 }
 
-func (cb *Chessboard) Move(m Move) {
-	cb.Point[m.EndPosition] = cb.Point[m.StartPosition]
-	cb.Point[m.StartPosition] = ChessPiece{}
-}
-
-func (cb *Chessboard) Copy() *Chessboard {
-	return deepcopy.Copy(cb).(*Chessboard)
-}
-
-func (cb *Chessboard) SwitchTurn() {
-	if cb.Turn == 0 {
-		cb.Turn = 1
-	} else {
-		cb.Turn = 0
-	}
-}
-
 const (
-	Type_PAWN   = "pawn"
-	Type_QUEEN  = "queen"
-	Type_BISHOP = "bishop"
-	Type_ROOK   = "rook"
-	Type_KNIGHT = "knight"
-	Type_KING   = "king"
+	Type_WHITE_KING   = 100
+	Type_WHITE_QUEEN  = 9
+	Type_WHITE_ROOK   = 5
+	Type_WHITE_KNIGHT = 4
+	Type_WHITE_BISHOP = 3
+	Type_WHITE_PAWN   = 1
+	Type_BLACK_KING   = -100
+	Type_BLACK_QUEEN  = -9
+	Type_BLACK_ROOK   = -5
+	Type_BLACK_KNIGHT = -4
+	Type_BLACK_BISHOP = -3
+	Type_BLACK_PAWN   = -1
 
 	FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 )
 
-func (cb *Chessboard) GenerateFen(fenString ...string) {
-	var fen string
-	if len(fenString) <= 0 {
-		fen = FEN
-	} else {
-		fen = fenString[0]
+func ToPrintable(piece int) string {
+	switch piece {
+	case Type_WHITE_KING:
+		return "K"
+	case Type_WHITE_QUEEN:
+		return "Q"
+	case Type_WHITE_ROOK:
+		return "R"
+	case Type_WHITE_KNIGHT:
+		return "N"
+	case Type_WHITE_BISHOP:
+		return "B"
+	case Type_WHITE_PAWN:
+		return "P"
+	case Type_BLACK_KING:
+		return "k"
+	case Type_BLACK_QUEEN:
+		return "q"
+	case Type_BLACK_ROOK:
+		return "r"
+	case Type_BLACK_KNIGHT:
+		return "n"
+	case Type_BLACK_BISHOP:
+		return "b"
+	case Type_BLACK_PAWN:
+		return "p"
 	}
 
-	parts := strings.Split(fen, " ")
+	return ""
+}
+
+func GenerateStartingBoard() []int {
+	parts := strings.Split(FEN, " ")
 	position := parts[0]
 
 	ranks := strings.Split(position, "/")
-	cb.Point = make([]ChessPiece, 64)
+	board := make([]int, 64)
 
 	for rankIndex, rank := range ranks {
 		index := 0
@@ -89,127 +92,97 @@ func (cb *Chessboard) GenerateFen(fenString ...string) {
 			if char >= '1' && char <= '8' {
 				index += int(char - '0')
 			} else {
-				var pieceValue ChessPiece
-				position := rankIndex*8 + index
+				var pieceValue int
 				switch char {
 				case 'p':
-					pieceValue = ChessPiece{Type: Type_PAWN, Value: 1, Color: -1, Position: position} // Black pawn
+					pieceValue = Type_BLACK_PAWN
 				case 'b':
-					pieceValue = ChessPiece{Type: Type_BISHOP, Value: 3, Color: -1, Position: position}
+					pieceValue = Type_BLACK_BISHOP
 				case 'r':
-					pieceValue = ChessPiece{Type: Type_ROOK, Value: 5, Color: -1, Position: position}
+					pieceValue = Type_BLACK_ROOK
 				case 'n':
-					pieceValue = ChessPiece{Type: Type_KNIGHT, Value: 4, Color: -1, Position: position}
+					pieceValue = Type_BLACK_KNIGHT
 				case 'q':
-					pieceValue = ChessPiece{Type: Type_QUEEN, Value: 9, Color: -1, Position: position}
+					pieceValue = Type_BLACK_QUEEN
 				case 'k':
-					pieceValue = ChessPiece{Type: Type_KING, Value: 100, Color: -1, Position: position}
+					pieceValue = Type_BLACK_KING
 				case 'P':
-					pieceValue = ChessPiece{Type: Type_PAWN, Value: 1, Color: 1, Position: position} // White pawn
+					pieceValue = Type_WHITE_PAWN
 				case 'B':
-					pieceValue = ChessPiece{Type: Type_BISHOP, Value: 3, Color: 1, Position: position}
+					pieceValue = Type_WHITE_BISHOP
 				case 'R':
-					pieceValue = ChessPiece{Type: Type_ROOK, Value: 5, Color: 1, Position: position}
+					pieceValue = Type_WHITE_ROOK
 				case 'N':
-					pieceValue = ChessPiece{Type: Type_KNIGHT, Value: 4, Color: 1, Position: position}
+					pieceValue = Type_WHITE_KNIGHT
 				case 'Q':
-					pieceValue = ChessPiece{Type: Type_QUEEN, Value: 9, Color: 1, Position: position}
+					pieceValue = Type_WHITE_QUEEN
 				case 'K':
-					pieceValue = ChessPiece{Type: Type_KING, Value: 100, Color: 1, Position: position}
+					pieceValue = Type_WHITE_KING
 				default:
 					panic("Invalid FEN string")
 				}
 
-				cb.Point[rankIndex*8+index] = pieceValue
+				board[rankIndex*8+index] = pieceValue
 				index++
 			}
 		}
 	}
+
+	return board
 }
 
-type Move struct {
-	StartPosition int
-	EndPosition   int
-}
+func GenerateMoves(board []int, turn int) []Move {
+	var moves []Move
+	// White turn
+	if turn%2 == 1 {
+		for i := 0; i < 64; i++ {
+			piece := board[i]
 
-type Piece interface {
-	GenerateMoves(board Chessboard) []Move
-}
-
-type ChessPiece struct {
-	Type     string
-	Value    int
-	Color    int // black = -1 white = 1
-	Position int
-	HasMoved bool
-}
-
-func (cp ChessPiece) ToPrintable() string {
-	switch cp.Type {
-	case Type_KING:
-		return AssertColor("k", cp.Color)
-	case Type_QUEEN:
-		return AssertColor("q", cp.Color)
-	case Type_ROOK:
-		return AssertColor("r", cp.Color)
-	case Type_KNIGHT:
-		return AssertColor("n", cp.Color)
-	case Type_BISHOP:
-		return AssertColor("b", cp.Color)
-	case Type_PAWN:
-		return AssertColor("p", cp.Color)
-	}
-
-	return ""
-}
-
-func AssertColor(piece string, color int) string {
-	if color == -1 {
-		return strings.ToLower(piece)
-	}
-
-	return strings.ToUpper(piece)
-}
-
-func (cb Chessboard) GenerateMoves() []Move {
-	moves := []Move{}
-
-	for _, p := range cb.Point {
-		// white turn
-		if cb.Turn == 0 && cb.Point[p.Position].Color != 1 {
-			continue
+			switch piece {
+			case Type_WHITE_KING:
+				moves = append(moves, GenerateKingMoves(board, i)...)
+			case Type_WHITE_QUEEN:
+				moves = append(moves, GenerateQueenMoves(board, i)...)
+			case Type_WHITE_ROOK:
+				moves = append(moves, GenerateRookMoves(board, i)...)
+			case Type_WHITE_KNIGHT:
+				moves = append(moves, GenerateKnightMoves(board, i)...)
+			case Type_WHITE_BISHOP:
+				moves = append(moves, GenerateBishopMoves(board, i)...)
+			case Type_WHITE_PAWN:
+				moves = append(moves, GeneratePawnMoves(board, i, 1)...)
+			}
 		}
+	} else {
+		for i := 0; i < 64; i++ {
+			piece := board[i]
 
-		if cb.Turn == 1 && cb.Point[p.Position].Color != -1 {
-			continue
-		}
-
-		switch p.Type {
-		case Type_KING:
-			moves = append(moves, p.GenerateKingMoves(cb)...)
-		case Type_QUEEN:
-			moves = append(moves, p.GenerateQueenMoves(cb)...)
-		case Type_ROOK:
-			moves = append(moves, p.GenerateRookMoves(cb)...)
-		case Type_KNIGHT:
-			moves = append(moves, p.GenerateKnightMoves(cb)...)
-		case Type_BISHOP:
-			moves = append(moves, p.GenerateBishopMoves(cb)...)
-		case Type_PAWN:
-			moves = append(moves, p.GeneratePawnMoves(cb)...)
-		default:
-			continue
+			switch piece {
+			case Type_BLACK_KING:
+				moves = append(moves, GenerateKingMoves(board, i)...)
+			case Type_BLACK_QUEEN:
+				moves = append(moves, GenerateQueenMoves(board, i)...)
+			case Type_BLACK_ROOK:
+				moves = append(moves, GenerateRookMoves(board, i)...)
+			case Type_BLACK_KNIGHT:
+				moves = append(moves, GenerateKnightMoves(board, i)...)
+			case Type_BLACK_BISHOP:
+				moves = append(moves, GenerateBishopMoves(board, i)...)
+			case Type_BLACK_PAWN:
+				moves = append(moves, GeneratePawnMoves(board, i, -1)...)
+			}
 		}
 	}
+
 	return moves
 }
 
-func (king ChessPiece) GenerateKingMoves(board Chessboard) []Move {
+func GenerateKingMoves(board []int, king int) []Move {
 	directions := []int{-8, 8, -1, 1, -9, 9, -7, 7}
 	moves := []Move{}
 
 	for _, d := range directions {
-		newPosition := king.Position + d
+		newPosition := king + d
 
 		// Igne positionore thess because they are out of bounds
 		if newPosition < 0 || newPosition >= 64 {
@@ -217,22 +190,22 @@ func (king ChessPiece) GenerateKingMoves(board Chessboard) []Move {
 		}
 
 		// Target is teammate
-		if board.Point[newPosition].Color == king.Color {
+		if IsTeammate(board[king], board[newPosition]) {
 			continue
 		}
 
-		moves = append(moves, Move{king.Position, newPosition})
+		moves = append(moves, Move{king, newPosition})
 	}
 
 	return moves
 }
 
-func (queen ChessPiece) GenerateQueenMoves(board Chessboard) []Move {
+func GenerateQueenMoves(board []int, queen int) []Move {
 	directions := []int{-8, 8, -1, 1, -9, 9, -7, 7}
 	moves := []Move{}
 
 	for _, d := range directions {
-		newPosition := queen.Position
+		newPosition := queen
 
 		for {
 			newPosition += d
@@ -241,28 +214,28 @@ func (queen ChessPiece) GenerateQueenMoves(board Chessboard) []Move {
 			}
 
 			// target is enemy
-			if board.Point[newPosition].Color != queen.Color {
-				moves = append(moves, Move{queen.Position, newPosition})
+			if !IsTeammate(board[queen], board[newPosition]) {
+				moves = append(moves, Move{queen, newPosition})
 			}
 
 			// Stop going if queen is blocked
-			if &board.Point[newPosition] != nil {
+			if board[newPosition] != 0 {
 				break
 			}
 
-			moves = append(moves, Move{queen.Position, newPosition})
+			moves = append(moves, Move{queen, newPosition})
 		}
 	}
 
 	return moves
 }
 
-func (rook ChessPiece) GenerateRookMoves(board Chessboard) []Move {
+func GenerateRookMoves(board []int, rook int) []Move {
 	directions := []int{-8, 8, -1, 1}
 	moves := []Move{}
 
 	for _, d := range directions {
-		newPosition := rook.Position
+		newPosition := rook
 
 		for {
 			newPosition += d
@@ -271,29 +244,28 @@ func (rook ChessPiece) GenerateRookMoves(board Chessboard) []Move {
 			}
 
 			// target is enemy
-			if board.Point[newPosition].Color != rook.Color {
-				moves = append(moves, Move{rook.Position, newPosition})
-				break
+			if !IsTeammate(board[rook], board[newPosition]) {
+				moves = append(moves, Move{rook, newPosition})
 			}
 
 			// Stop going if rook is blocked
-			if &board.Point[newPosition] != nil {
+			if board[newPosition] != 0 {
 				break
 			}
 
-			moves = append(moves, Move{rook.Position, newPosition})
+			moves = append(moves, Move{rook, newPosition})
 		}
 	}
 
 	return moves
 }
 
-func (bishop ChessPiece) GenerateBishopMoves(board Chessboard) []Move {
+func GenerateBishopMoves(board []int, bishop int) []Move {
 	directions := []int{-9, 9, -7, 7}
 	moves := []Move{}
 
 	for _, d := range directions {
-		newPosition := bishop.Position
+		newPosition := bishop
 
 		for {
 			newPosition += d
@@ -302,108 +274,123 @@ func (bishop ChessPiece) GenerateBishopMoves(board Chessboard) []Move {
 			}
 
 			// target is enemy
-			if board.Point[newPosition].Color != bishop.Color {
-				moves = append(moves, Move{bishop.Position, newPosition})
-				break
+			if !IsTeammate(board[bishop], board[newPosition]) {
+				moves = append(moves, Move{bishop, newPosition})
 			}
 
 			// Stop going if bishop is blocked
-			if &board.Point[newPosition] != nil {
+			if board[newPosition] != 0 {
 				break
 			}
 
-			moves = append(moves, Move{bishop.Position, newPosition})
+			moves = append(moves, Move{bishop, newPosition})
 		}
 	}
 
 	return moves
 }
 
-func (knight ChessPiece) GenerateKnightMoves(board Chessboard) []Move {
+func GenerateKnightMoves(board []int, knight int) []Move {
 	moves := []Move{}
 
 	possibleMovement := []int{-17, -10, -15, -6, 17, 10, 15, 6}
 
 	for _, m := range possibleMovement {
-		endPosition := knight.Position + m
+		endPosition := knight + m
 
 		if endPosition < 0 || endPosition >= 64 {
 			continue
 		}
-		if board.Point[endPosition].Color == knight.Color {
+
+		if IsTeammate(board[knight], board[endPosition]) {
 			continue
 		}
 
-		if board.Point[endPosition].Type != "" {
-			moves = append(moves, Move{knight.Position, endPosition})
+		if board[endPosition] != 0 {
+			moves = append(moves, Move{knight, endPosition})
 		}
 
-		sourceRank, sourceFile := knight.Position/8, knight.Position%8
+		sourceRank, sourceFile := knight/8, knight%8
 		destRank, destFile := endPosition/8, endPosition%8
 
 		if helper.Abs(sourceRank-destRank) <= 2 && helper.Abs(sourceFile-destFile) <= 2 {
-			moves = append(moves, Move{knight.Position, endPosition})
+			moves = append(moves, Move{knight, endPosition})
 		}
 	}
 
 	return moves
 }
 
-func (pawn ChessPiece) GeneratePawnMoves(board Chessboard) []Move {
+func GeneratePawnMoves(board []int, pawn int, color int) []Move {
 	moves := []Move{}
 
+	frontEmpty := false
 	var endPosition int
-	if pawn.Color == 1 {
-		endPosition = pawn.Position - 8
+	if color == 1 {
+		endPosition = pawn - 8
 	} else {
-		endPosition = pawn.Position + 8
+		endPosition = pawn + 8
 	}
 
-	if (endPosition >= 0 && endPosition < 64) && board.Point[endPosition].Type == "" {
-		moves = append(moves, Move{pawn.Position, endPosition})
+	if (endPosition >= 0 && endPosition < 64) && board[endPosition] == 0 {
+		frontEmpty = true
+		moves = append(moves, Move{pawn, endPosition})
 	}
 
-	if (pawn.Position < 16 && pawn.Color == -1) || (pawn.Position > 49 && pawn.Color == 1) {
+	if ((pawn < 16 && color == -1) || (pawn > 47 && color == 1)) && frontEmpty {
 		var endPosition int
-		if pawn.Color == 1 {
-			endPosition = pawn.Position - 16
+		if color == 1 {
+			endPosition = pawn - 16
 		} else {
-			endPosition = pawn.Position + 16
+			endPosition = pawn + 16
 		}
 
-		if (endPosition >= 0 && endPosition < 64) && board.Point[endPosition].Type == "" {
-			moves = append(moves, Move{pawn.Position, endPosition})
+		if (endPosition >= 0 && endPosition < 64) && board[endPosition] == 0 {
+			moves = append(moves, Move{pawn, endPosition})
 		}
 		return moves
 	}
 
 	var leftAttackPosition int
-	if pawn.Color == -1 {
-		leftAttackPosition = pawn.Position - 9
+	if color == -1 {
+		leftAttackPosition = pawn - 9
 	} else {
-		leftAttackPosition = pawn.Position + 7
+		leftAttackPosition = pawn + 7
 	}
 
-	if (leftAttackPosition > 0 && leftAttackPosition < 64) && &board.Point[leftAttackPosition] != nil &&
-		(leftAttackPosition/8-pawn.Position/8) == 1 {
-		if board.Point[leftAttackPosition].Color != pawn.Color {
-			moves = append(moves, Move{pawn.Position, leftAttackPosition})
-		}
+	if (leftAttackPosition > 0 && leftAttackPosition < 64) && !IsTeammate(board[pawn], board[leftAttackPosition]) &&
+		(leftAttackPosition/8-pawn/8) == 1 {
+		moves = append(moves, Move{pawn, leftAttackPosition})
 	}
 
 	var rightAttackPosition int
-	if pawn.Color == -1 {
-		rightAttackPosition = pawn.Position - 7
+	if color == -1 {
+		rightAttackPosition = pawn - 7
 	} else {
-		rightAttackPosition = pawn.Position + 9
+		rightAttackPosition = pawn + 9
 	}
 
-	if (rightAttackPosition > 0 && rightAttackPosition < 64) && &board.Point[rightAttackPosition] != nil &&
-		(rightAttackPosition/8-pawn.Position/8) == -1 {
-		if board.Point[rightAttackPosition].Color != pawn.Color {
-			moves = append(moves, Move{pawn.Position, rightAttackPosition})
-		}
+	if (rightAttackPosition > 0 && rightAttackPosition < 64) && !IsTeammate(board[pawn], board[rightAttackPosition]) &&
+		(rightAttackPosition/8-pawn/8) == -1 {
+		moves = append(moves, Move{pawn, rightAttackPosition})
 	}
 
 	return moves
+}
+
+func IsTeammate(piece1 int, piece2 int) bool {
+	if piece1 == 0 || piece2 == 0 {
+		return false
+	}
+
+	if piece1 > 0 {
+		return piece2 > 0
+	} else {
+		return piece2 < 0
+	}
+}
+
+func MovePiece(board []int, move Move) {
+	board[move.EndPosition] = board[move.StartPosition]
+	board[move.StartPosition] = 0
 }

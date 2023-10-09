@@ -12,3 +12,12 @@ func Swap(x, y *int) {
 	y = x
 	x = temp
 }
+
+func ConvertMapToArray[T comparable](inputMap map[T]T) []T {
+	array := make([]T, 0)
+	for k := range inputMap {
+		array = append(array, k)
+	}
+
+	return array
+}
